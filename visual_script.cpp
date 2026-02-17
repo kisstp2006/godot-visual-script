@@ -2417,6 +2417,11 @@ VisualScriptFunctionState::~VisualScriptFunctionState() {
 
 String VisualScriptLanguage::get_name() const { return "VisualScript"; }
 
+Vector<String> VisualScriptLanguage::get_doc_comment_delimiters() const {
+	// VisualScript has no textual doc-comment syntax.
+	return Vector<String>();
+}
+
 /* LANGUAGE FUNCTIONS */
 void VisualScriptLanguage::init() {}
 
@@ -2427,17 +2432,24 @@ String VisualScriptLanguage::get_extension() const { return "vs"; }
 void VisualScriptLanguage::finish() {}
 
 /* EDITOR FUNCTIONS */
-void VisualScriptLanguage::get_reserved_words(List<String> *p_words) const {}
+Vector<String> VisualScriptLanguage::get_reserved_words() const {
+	// VisualScript has no reserved words (not a text language).
+	return Vector<String>();
+}
 
-bool VisualScriptLanguage::is_control_flow_keyword(String p_keyword) const {
+bool VisualScriptLanguage::is_control_flow_keyword(const String &p_keyword) const {
 	return false;
 }
 
-void VisualScriptLanguage::get_comment_delimiters(
-		List<String> *p_delimiters) const {}
+Vector<String> VisualScriptLanguage::get_comment_delimiters() const {
+	// VisualScript has no textual comment syntax.
+	return Vector<String>();
+}
 
-void VisualScriptLanguage::get_string_delimiters(
-		List<String> *p_delimiters) const {}
+Vector<String> VisualScriptLanguage::get_string_delimiters() const {
+	// VisualScript has no textual string delimiter syntax.
+	return Vector<String>();
+}
 
 bool VisualScriptLanguage::is_using_templates() { return false; }
 
@@ -2463,8 +2475,6 @@ bool VisualScriptLanguage::validate(const String &p_script,
 Script *VisualScriptLanguage::create_script() const {
 	return memnew(VisualScript);
 }
-
-bool VisualScriptLanguage::has_named_classes() const { return false; }
 
 bool VisualScriptLanguage::supports_builtin_mode() const { return true; }
 
@@ -2663,6 +2673,10 @@ String VisualScriptLanguage::debug_parse_stack_level_expression(
 
 void VisualScriptLanguage::reload_all_scripts() {}
 
+void VisualScriptLanguage::reload_scripts(const Array &p_scripts, bool p_soft_reload) {
+	// VisualScript doesn't support reloading individual scripts.
+}
+
 void VisualScriptLanguage::reload_tool_script(const Ref<Script> &p_script,
 		bool p_soft_reload) {}
 
@@ -2685,6 +2699,10 @@ void VisualScriptLanguage::get_public_annotations(
 void VisualScriptLanguage::profiling_start() {}
 
 void VisualScriptLanguage::profiling_stop() {}
+
+void VisualScriptLanguage::profiling_set_save_native_calls(bool p_enable) {
+	// VisualScript doesn't use native call profiling.
+}
 
 int VisualScriptLanguage::profiling_get_accumulated_data(
 		ProfilingInfo *p_info_arr, int p_info_max) {
@@ -2754,3 +2772,9 @@ StringName VisualScript::get_global_name() const { return get_name(); }
 String VisualScript::get_class_icon_path() const {
 	return "icons/VisualScript.svg";
 }
+
+#ifdef TOOLS_ENABLED
+StringName VisualScript::get_doc_class_name() const {
+	return get_instance_base_type();
+}
+#endif // TOOLS_ENABLED

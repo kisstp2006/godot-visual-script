@@ -34,6 +34,7 @@
 #include "core/config/project_settings.h"
 #include "core/core_constants.h"
 #include "core/input/input.h"
+#include "core/io/resource_loader.h"
 #include "core/os/os.h"
 #include "scene/main/node.h"
 #include "scene/main/scene_tree.h"
@@ -1958,7 +1959,7 @@ void VisualScriptClassConstant::set_base_type(const StringName &p_which) {
 			}
 		}
 		if (!found_name) {
-			name = constants[0];
+			name = constants.front()->get();
 		}
 	} else {
 		name = "";
@@ -2105,7 +2106,7 @@ void VisualScriptBasicTypeConstant::set_basic_type(Variant::Type p_which) {
 			}
 		}
 		if (!found_name) {
-			name = constants[0];
+			name = constants.front()->get();
 		}
 	} else {
 		name = "";
@@ -2203,13 +2204,13 @@ const char *VisualScriptMathConstant::const_name[MATH_CONSTANT_MAX] = {
 
 double VisualScriptMathConstant::const_value[MATH_CONSTANT_MAX] = {
 	1.0,
-	Math_PI,
-	Math_PI * 0.5,
-	Math_TAU,
-	2.71828182845904523536,
-	Math::sqrt(2.0),
-	INFINITY,
-	NAN
+	Math::PI,
+	Math::PI * 0.5,
+	Math::TAU,
+	Math::E,
+	Math::SQRT2,
+	Math::INF,
+	Math::NaN
 };
 
 int VisualScriptMathConstant::get_output_sequence_port_count() const {
@@ -2451,7 +2452,7 @@ PropertyInfo VisualScriptSceneNode::get_input_value_port_info(int p_idx) const {
 
 PropertyInfo
 VisualScriptSceneNode::get_output_value_port_info(int p_idx) const {
-	return PropertyInfo(Variant::OBJECT, path.simplified());
+	return PropertyInfo(Variant::OBJECT, "node", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT, StringName(String(path.simplified())));
 }
 
 String VisualScriptSceneNode::get_caption() const {
@@ -2604,7 +2605,7 @@ void VisualScriptSceneNode::_validate_property(PropertyInfo &p_property) const {
 			return;
 		}
 
-		p_property.hint_string = script_node->get_path();
+		p_property.hint_string = String(script_node->get_path());
 	}
 #endif
 }

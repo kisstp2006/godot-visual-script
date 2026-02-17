@@ -1,3 +1,7 @@
+
+
+
+
 /**************************************************************************/
 /*  visual_script_editor.cpp                                              */
 /**************************************************************************/
@@ -41,11 +45,11 @@
 #include "core/os/keyboard.h"
 #include "core/variant/variant.h"
 #include "editor/editor_node.h"
-#include "editor/editor_resource_preview.h"
-#include "editor/editor_scale.h"
-#include "editor/editor_settings.h"
+#include "editor/inspector/editor_resource_preview.h"
+#include "editor/themes/editor_scale.h"
+#include "editor/settings/editor_settings.h"
 #include "editor/editor_undo_redo_manager.h"
-#include "editor/inspector_dock.h"
+#include "editor/docks/inspector_dock.h"
 #include "scene/gui/check_button.h"
 #include "scene/gui/graph_edit.h"
 #include "scene/gui/separator.h"
@@ -947,9 +951,9 @@ void VisualScriptEditor::_update_graph(int p_only_id) {
 					}
 
 					Button *rmbtn = memnew(Button);
-					rmbtn->set_icon(
-							EditorNode::get_singleton()->get_gui_base()->get_theme_icon(
-									SNAME("Remove"), SNAME("EditorIcons")));
+					   rmbtn->set_button_icon(
+						   EditorNode::get_singleton()->get_gui_base()->get_theme_icon(
+							   SNAME("Remove"), SNAME("EditorIcons")));
 					hbc->add_child(rmbtn);
 					rmbtn->connect(
 							"pressed",
@@ -982,12 +986,12 @@ void VisualScriptEditor::_update_graph(int p_only_id) {
 					} else if (left_type == Variant::OBJECT &&
 							Ref<Resource>(value).is_valid()) {
 						Ref<Resource> res = value;
-						Array arr;
-						arr.push_back(button->get_instance_id());
-						arr.push_back(String(value));
-						EditorResourcePreview::get_singleton()
-								->queue_edited_resource_preview(
-										res, this, "_button_resource_previewed", arr);
+						       Array arr;
+						       arr.push_back(button->get_instance_id());
+						       arr.push_back(String(value));
+						       EditorResourcePreview::get_singleton()
+							       ->queue_edited_resource_preview(
+								       res, callable_mp(this, &VisualScriptEditor::_button_resource_previewed).bind(arr));
 
 					} else if (pi.type == Variant::INT && pi.hint == PROPERTY_HINT_ENUM) {
 						bool found = false;
@@ -1062,9 +1066,9 @@ void VisualScriptEditor::_update_graph(int p_only_id) {
 			if (right_ok) {
 				if (is_vslist) {
 					Button *rmbtn = memnew(Button);
-					rmbtn->set_icon(
-							EditorNode::get_singleton()->get_gui_base()->get_theme_icon(
-									SNAME("Remove"), SNAME("EditorIcons")));
+					   rmbtn->set_button_icon(
+						   EditorNode::get_singleton()->get_gui_base()->get_theme_icon(
+							   SNAME("Remove"), SNAME("EditorIcons")));
 					hbc->add_child(rmbtn);
 					rmbtn->connect(
 							"pressed",
@@ -1349,8 +1353,8 @@ void VisualScriptEditor::_update_members() {
 	}
 
 	base_type_select->set_text(base_type);
-	base_type_select->set_icon(
-			Control::get_theme_icon(icon_type, SNAME("EditorIcons")));
+	   base_type_select->set_button_icon(
+		   Control::get_theme_icon(icon_type, SNAME("EditorIcons")));
 
 	updating_members = false;
 }
@@ -1620,9 +1624,9 @@ void VisualScriptEditor::_add_func_input() {
 	hbox->add_child(type_box);
 
 	Button *delete_button = memnew(Button);
-	delete_button->set_icon(
-			EditorNode::get_singleton()->get_gui_base()->get_theme_icon(
-					SNAME("Remove"), SNAME("EditorIcons")));
+	   delete_button->set_button_icon(
+		   EditorNode::get_singleton()->get_gui_base()->get_theme_icon(
+			   SNAME("Remove"), SNAME("EditorIcons")));
 	delete_button->set_tooltip_text(vformat(TTR("Delete input port")));
 	hbox->add_child(delete_button);
 
@@ -2095,17 +2099,21 @@ void VisualScriptEditor::_on_nodes_paste() {
 	}
 }
 
-void VisualScriptEditor::_on_nodes_delete() {
-	// Delete all the selected nodes.
+void VisualScriptEditor::_on_nodes_delete(const TypedArray<StringName> &p_nodes) {
+	// Delete selected nodes. If p_nodes is empty, collect selection from graph (e.g. menu action).
 
 	List<int> to_erase;
 
-	for (int i = 0; i < graph->get_child_count(); i++) {
-		GraphNode *gn = Object::cast_to<GraphNode>(graph->get_child(i));
-		if (gn) {
-			if (gn->is_selected()) {
+	if (p_nodes.is_empty()) {
+		for (int i = 0; i < graph->get_child_count(); i++) {
+			GraphNode *gn = Object::cast_to<GraphNode>(graph->get_child(i));
+			if (gn && gn->is_selected()) {
 				to_erase.push_back(gn->get_name().operator String().to_int());
 			}
+		}
+	} else {
+		for (int j = 0; j < p_nodes.size(); j++) {
+			to_erase.push_back(String(p_nodes[j]).to_int());
 		}
 	}
 
@@ -2198,9 +2206,9 @@ void VisualScriptEditor::_on_nodes_duplicate() {
 		}
 	}
 
-	List<VisualScript::DataConnection> data;
-	script->get_data_connection_list(&data);
-	for (const VisualScript::DataConnection &E : data) {
+	List<VisualScript::DataConnection> data_connections;
+	script->get_data_connection_list(&data_connections);
+	for (const VisualScript::DataConnection &E : data_connections) {
 		if (to_duplicate.has(E.from_node) && to_duplicate.has(E.to_node)) {
 			undo_redo->add_do_method(script.ptr(), "data_connect", remap[E.from_node],
 					E.from_port, remap[E.to_node], E.to_port);
@@ -2222,7 +2230,7 @@ void VisualScriptEditor::_on_nodes_duplicate() {
 
 	if (to_select.size()) {
 		EditorNode::get_singleton()->push_item(
-				script->get_node(to_select.front()->get()).ptr());
+				script->get_node(*to_select.begin()).ptr());
 	}
 }
 
@@ -2443,7 +2451,12 @@ bool VisualScriptEditor::can_drop_data_fw(const Point2 &p_point,
 			const_cast<VisualScriptEditor *>(this)->_show_hint(
 					TTR("Hold Ctrl to drop a Getter. Hold Shift to drop a generic "
 						"signature."));
+
+
+
 #endif
+
+
 		}
 
 		if (String(d["type"]) == "nodes") {
@@ -2904,7 +2917,7 @@ void VisualScriptEditor::_button_resource_previewed(
 	if (p_preview.is_null()) {
 		b->set_text(ud[1]);
 	} else {
-		b->set_icon(p_preview);
+		b->set_button_icon(p_preview);
 	}
 }
 
@@ -3028,11 +3041,14 @@ void VisualScriptEditor::_center_on_node(int p_id) {
 	}
 }
 
-void VisualScriptEditor::goto_line(int p_line, bool p_with_error) {
+void VisualScriptEditor::goto_line(int p_line, int p_column) {
 	p_line += 1; // Add one because script lines begin from 0.
 
-	if (p_with_error) {
+	// VisualScript doesn't use columns, but we can use p_column as error flag if needed.
+	if (p_column < 0) {
 		error_line = p_line;
+	} else {
+		error_line = -1;
 	}
 
 	if (script->has_node(p_line)) {
@@ -3054,6 +3070,8 @@ void VisualScriptEditor::clear_executing_line() {
 }
 
 void VisualScriptEditor::trim_trailing_whitespace() {}
+
+void VisualScriptEditor::trim_final_newlines() {}
 
 void VisualScriptEditor::insert_final_newline() {}
 
@@ -3082,7 +3100,7 @@ PackedInt32Array VisualScriptEditor::get_breakpoints() {
 }
 
 void VisualScriptEditor::add_callback(const String &p_function,
-		PackedStringArray p_args) {
+		const PackedStringArray &p_args) {
 	if (script->has_function(p_function)) {
 		_update_members();
 		_update_graph();
@@ -3133,6 +3151,8 @@ void VisualScriptEditor::set_debugger_active(bool p_active) {
 }
 
 Control *VisualScriptEditor::get_base_editor() const { return graph; }
+
+CodeTextEditor *VisualScriptEditor::get_code_editor() const { return nullptr; }
 
 void VisualScriptEditor::set_tooltip_request_func(
 		const Callable &p_toolip_callback) {}
@@ -3697,12 +3717,12 @@ void VisualScriptEditor::_selected_connect_node(const String &p_text,
 		Ref<VisualScriptFunctionCall> n;
 		n.instantiate();
 		if (!drop_path.is_empty()) {
-			if (drop_path == ".") {
+			   if (drop_path == String(".")) {
 				n->set_call_mode(VisualScriptFunctionCall::CALL_MODE_SELF);
-			} else {
-				n->set_call_mode(VisualScriptFunctionCall::CALL_MODE_NODE_PATH);
-				n->set_base_path(drop_path);
-			}
+			   } else {
+				   n->set_call_mode(VisualScriptFunctionCall::CALL_MODE_NODE_PATH);
+				   n->set_base_path(drop_path);
+			   }
 		} else {
 			n->set_call_mode(VisualScriptFunctionCall::CALL_MODE_INSTANCE);
 		}
@@ -3721,12 +3741,12 @@ void VisualScriptEditor::_selected_connect_node(const String &p_text,
 			n.instantiate();
 			n->set_property(property_path[1]);
 			if (!drop_path.is_empty()) {
-				if (drop_path == ".") {
+				   if (drop_path == String(".")) {
 					n->set_call_mode(VisualScriptPropertySet::CALL_MODE_SELF);
-				} else {
-					n->set_call_mode(VisualScriptPropertySet::CALL_MODE_NODE_PATH);
-					n->set_base_path(drop_path);
-				}
+				   } else {
+					   n->set_call_mode(VisualScriptPropertySet::CALL_MODE_NODE_PATH);
+					   n->set_base_path(drop_path);
+				   }
 			}
 			if (drop_node) {
 				n->set_base_type(drop_node->get_class());
@@ -3741,12 +3761,12 @@ void VisualScriptEditor::_selected_connect_node(const String &p_text,
 			n.instantiate();
 			n->set_property(property_path[1]);
 			if (!drop_path.is_empty()) {
-				if (drop_path == ".") {
+				   if (drop_path == String(".")) {
 					n->set_call_mode(VisualScriptPropertyGet::CALL_MODE_SELF);
-				} else {
-					n->set_call_mode(VisualScriptPropertyGet::CALL_MODE_NODE_PATH);
-					n->set_base_path(drop_path);
-				}
+				   } else {
+					   n->set_call_mode(VisualScriptPropertyGet::CALL_MODE_NODE_PATH);
+					   n->set_base_path(drop_path);
+				   }
 			}
 			if (drop_node) {
 				n->set_base_type(drop_node->get_class());
@@ -3812,9 +3832,9 @@ void VisualScriptEditor::_selected_connect_node(const String &p_text,
 				n->set_basic_type(Variant::CALLABLE);
 			} else if (property_path[0] == "Signal") {
 				n->set_basic_type(Variant::SIGNAL);
-			} else if (property_path[0] == "StringName") {
+			} else if (property_path[0] == String("StringName")) {
 				n->set_basic_type(Variant::STRING_NAME);
-			} else if (property_path[0] == "NodePath") {
+			} else if (property_path[0] == String("NodePath")) {
 				n->set_basic_type(Variant::NODE_PATH);
 			} else if (property_path[0] == "Dictionary") {
 				n->set_basic_type(Variant::DICTIONARY);
@@ -4035,9 +4055,9 @@ void VisualScriptEditor::_selected_connect_node(const String &p_text,
 		}
 
 		if (drop_node) {
-			Ref<Script> script = drop_node->get_script();
-			if (script != nullptr) {
-				base_script = script->get_path();
+			Ref<Script> drop_script = drop_node->get_script();
+			if (drop_script != nullptr) {
+				base_script = drop_script->get_path();
 			}
 		}
 
@@ -4258,11 +4278,11 @@ void VisualScriptEditor::_default_value_edited(Node *p_button, int p_id,
 			if (script_node) {
 				// Pick a node relative to the script, IF the script exists.
 				pinfo.hint = PROPERTY_HINT_NODE_PATH_TO_EDITED_NODE;
-				pinfo.hint_string = script_node->get_path();
+				pinfo.hint_string = String(script_node->get_path());
 			} else {
 				// Pick a path relative to edited scene.
 				pinfo.hint = PROPERTY_HINT_NODE_PATH_TO_EDITED_NODE;
-				pinfo.hint_string = get_tree()->get_edited_scene_root()->get_path();
+				pinfo.hint_string = String(get_tree()->get_edited_scene_root()->get_path());
 			}
 		}
 	}
@@ -4319,7 +4339,7 @@ void VisualScriptEditor::_show_hint(const String &p_hint) {
 void VisualScriptEditor::_hide_timer() { hint_text->hide(); }
 
 void VisualScriptEditor::_toggle_scripts_pressed() {
-	ScriptEditor::get_singleton()->toggle_scripts_panel();
+	ScriptEditor::get_singleton()->toggle_files_panel();
 	update_toggle_scripts_button();
 }
 
@@ -4918,21 +4938,21 @@ void VisualScriptEditor::set_syntax_highlighter(
 
 void VisualScriptEditor::update_toggle_scripts_button() {
 	if (is_layout_rtl()) {
-		toggle_scripts_button->set_icon(Control::get_theme_icon(
-				ScriptEditor::get_singleton()->is_scripts_panel_toggled()
+		toggle_scripts_button->set_button_icon(Control::get_theme_icon(
+				   ScriptEditor::get_singleton()->is_files_panel_toggled()
 						? SNAME("Forward")
 						: SNAME("Back"),
 				SNAME("EditorIcons")));
 	} else {
-		toggle_scripts_button->set_icon(Control::get_theme_icon(
-				ScriptEditor::get_singleton()->is_scripts_panel_toggled()
+		toggle_scripts_button->set_button_icon(Control::get_theme_icon(
+				   ScriptEditor::get_singleton()->is_files_panel_toggled()
 						? SNAME("Back")
 						: SNAME("Forward"),
 				SNAME("EditorIcons")));
 	}
 	toggle_scripts_button->set_tooltip_text(vformat(
 			"%s (%s)", TTR("Toggle Scripts Panel"),
-			ED_GET_SHORTCUT("script_editor/toggle_scripts_panel")->get_as_text()));
+			ED_GET_SHORTCUT("script_editor/toggle_files_panel")->get_as_text()));
 }
 
 void VisualScriptEditor::_bind_methods() {

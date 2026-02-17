@@ -592,7 +592,7 @@ void VisualScriptFunctionCall::_validate_property(
 		} else {
 			Node *bnode = _get_base_node();
 			if (bnode) {
-				p_property.hint_string = bnode->get_path();
+				p_property.hint_string = String(bnode->get_path());
 			}
 		}
 	}
@@ -1352,7 +1352,7 @@ void VisualScriptPropertySet::_validate_property(
 		} else {
 			Node *bnode = _get_base_node();
 			if (bnode) {
-				p_property.hint_string = bnode->get_path(); // convert to long string
+				p_property.hint_string = String(bnode->get_path()); // convert to long string
 			}
 		}
 	}
@@ -2104,7 +2104,7 @@ void VisualScriptPropertyGet::_validate_property(
 			p_property.hint = PROPERTY_HINT_NODE_PATH_TO_EDITED_NODE;
 			Node *bnode = _get_base_node();
 			if (bnode) {
-				p_property.hint_string = bnode->get_path().simplified();
+				p_property.hint_string = String(bnode->get_path().simplified());
 			}
 		}
 	}

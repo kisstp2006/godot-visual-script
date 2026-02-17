@@ -37,13 +37,15 @@
 #include "core/object/script_language.h"
 #include "core/os/keyboard.h"
 #include "core/string/string_name.h"
-#include "editor/doc_tools.h"
-#include "editor/editor_feature_profile.h"
+#include "editor/doc/doc_tools.h"
+#include "editor/settings/editor_feature_profile.h"
 #include "editor/editor_node.h"
-#include "editor/editor_scale.h"
-#include "editor/editor_settings.h"
+#include "editor/themes/editor_scale.h"
+#include "editor/settings/editor_settings.h"
 #include "scene/main/node.h"
 #include "scene/main/window.h"
+#include "scene/gui/separator.h"
+#include "scene/gui/line_edit.h"
 
 void VisualScriptPropertySelector::_update_icons() {
 	search_box->set_right_icon(
@@ -53,27 +55,27 @@ void VisualScriptPropertySelector::_update_icons() {
 			"right_icon",
 			results_tree->get_theme_icon(SNAME("Search"), SNAME("EditorIcons")));
 
-	search_visual_script_nodes->set_icon(results_tree->get_theme_icon(
-			SNAME("VisualScript"), SNAME("EditorIcons")));
-	search_classes->set_icon(
-			results_tree->get_theme_icon(SNAME("Object"), SNAME("EditorIcons")));
-	search_methods->set_icon(results_tree->get_theme_icon(SNAME("MemberMethod"),
-			SNAME("EditorIcons")));
-	search_operators->set_icon(
-			results_tree->get_theme_icon(SNAME("Add"), SNAME("EditorIcons")));
-	search_signals->set_icon(results_tree->get_theme_icon(SNAME("MemberSignal"),
-			SNAME("EditorIcons")));
-	search_constants->set_icon(results_tree->get_theme_icon(
-			SNAME("MemberConstant"), SNAME("EditorIcons")));
-	search_properties->set_icon(results_tree->get_theme_icon(
-			SNAME("MemberProperty"), SNAME("EditorIcons")));
-	search_theme_items->set_icon(
-			results_tree->get_theme_icon(SNAME("MemberTheme"), SNAME("EditorIcons")));
+	   search_visual_script_nodes->set_button_icon(results_tree->get_theme_icon(
+		   SNAME("VisualScript"), SNAME("EditorIcons")));
+	   search_classes->set_button_icon(
+		   results_tree->get_theme_icon(SNAME("Object"), SNAME("EditorIcons")));
+	   search_methods->set_button_icon(results_tree->get_theme_icon(SNAME("MemberMethod"),
+		   SNAME("EditorIcons")));
+	   search_operators->set_button_icon(
+		   results_tree->get_theme_icon(SNAME("Add"), SNAME("EditorIcons")));
+	   search_signals->set_button_icon(results_tree->get_theme_icon(SNAME("MemberSignal"),
+		   SNAME("EditorIcons")));
+	   search_constants->set_button_icon(results_tree->get_theme_icon(
+		   SNAME("MemberConstant"), SNAME("EditorIcons")));
+	   search_properties->set_button_icon(results_tree->get_theme_icon(
+		   SNAME("MemberProperty"), SNAME("EditorIcons")));
+	   search_theme_items->set_button_icon(
+		   results_tree->get_theme_icon(SNAME("MemberTheme"), SNAME("EditorIcons")));
 
-	case_sensitive_button->set_icon(
-			results_tree->get_theme_icon(SNAME("MatchCase"), SNAME("EditorIcons")));
-	hierarchy_button->set_icon(
-			results_tree->get_theme_icon(SNAME("ClassList"), SNAME("EditorIcons")));
+	   case_sensitive_button->set_button_icon(
+		   results_tree->get_theme_icon(SNAME("MatchCase"), SNAME("EditorIcons")));
+	   hierarchy_button->set_button_icon(
+		   results_tree->get_theme_icon(SNAME("ClassList"), SNAME("EditorIcons")));
 }
 
 void VisualScriptPropertySelector::_sbox_input(const Ref<InputEvent> &p_ie) {
@@ -126,8 +128,8 @@ void VisualScriptPropertySelector::_confirmed() {
 }
 
 void VisualScriptPropertySelector::_item_selected() {
-	help_bit->set_text(results_tree->get_selected()->get_meta(
-			"description", "No description available"));
+	   help_bit->set_custom_text("", "", results_tree->get_selected()->get_meta(
+		   "description", "No description available"));
 }
 
 void VisualScriptPropertySelector::_hide_requested() {
@@ -621,11 +623,14 @@ bool VisualScriptPropertySelector::SearchRunner::_is_class_disabled_by_scope(
 	}
 
 	bool is_inheriter = false;
-	List<StringName> inheriters;
-	ClassDB::get_inheriters_from_class(selector_ui->base_type, &inheriters);
-	if (inheriters.find(p_class)) {
-		is_inheriter = true;
-	}
+	   LocalVector<StringName> inheriters;
+	   ClassDB::get_inheriters_from_class(selector_ui->base_type, inheriters);
+	   for (int i = 0; i < inheriters.size(); i++) {
+		   if (inheriters[i] == p_class) {
+			   is_inheriter = true;
+			   break;
+		   }
+	   }
 
 	if (scope_flags & SCOPE_BASE) {
 		if (is_base_script || is_base || is_parent) {
@@ -786,7 +791,12 @@ bool VisualScriptPropertySelector::SearchRunner::_phase_match_classes_init() {
 }
 
 bool VisualScriptPropertySelector::SearchRunner::_phase_node_classes_init() {
-	VisualScriptLanguage::singleton->get_registered_node_names(&vs_nodes);
+	List<String> temp_node_names;
+	VisualScriptLanguage::singleton->get_registered_node_names(&temp_node_names);
+	vs_nodes.clear();
+	for (List<String>::Element *E = temp_node_names.front(); E; E = E->next()) {
+		vs_nodes.push_back(E->get());
+	}
 	_add_class_doc("functions", "", "");
 	_add_class_doc("operators", "", "");
 	return true;
@@ -797,42 +807,42 @@ bool VisualScriptPropertySelector::SearchRunner::_phase_node_classes_build() {
 		return true;
 	}
 	String registered_node_name = vs_nodes[0];
-	vs_nodes.pop_front();
+	vs_nodes.remove_at(0);
 
 	Vector<String> path = registered_node_name.split("/");
-	if (path[0] == "constants") {
+	if (path.size() > 0 && path[0] == "constants") {
 		_add_class_doc(registered_node_name, "", "constants");
-	} else if (path[0] == "custom") {
+	} else if (path.size() > 0 && path[0] == "custom") {
 		_add_class_doc(registered_node_name, "", "custom");
-	} else if (path[0] == "data") {
+	} else if (path.size() > 0 && path[0] == "data") {
 		_add_class_doc(registered_node_name, "", "data");
-	} else if (path[0] == "flow_control") {
+	} else if (path.size() > 0 && path[0] == "flow_control") {
 		_add_class_doc(registered_node_name, "", "flow_control");
-	} else if (path[0] == "functions") {
-		if (path[1] == "built_in") {
+	} else if (path.size() > 0 && path[0] == "functions") {
+		if (path.size() > 1 && path[1] == "built_in") {
 			_add_class_doc(registered_node_name, "functions", "built_in");
-		} else if (path[1] == "by_type") {
+		} else if (path.size() > 1 && path[1] == "by_type") {
 			// No action is required.
 			// Using function references from ClassDB to remove confusion for users.
-		} else if (path[1] == "constructors") {
+		} else if (path.size() > 1 && path[1] == "constructors") {
 			_add_class_doc(registered_node_name, "", "constructors");
-		} else if (path[1] == "deconstruct") {
+		} else if (path.size() > 1 && path[1] == "deconstruct") {
 			_add_class_doc(registered_node_name, "", "deconstruct");
-		} else if (path[1] == "wait") {
+		} else if (path.size() > 1 && path[1] == "wait") {
 			_add_class_doc(registered_node_name, "functions", "yield");
 		} else {
 			_add_class_doc(registered_node_name, "functions", "");
 		}
-	} else if (path[0] == "index") {
+	} else if (path.size() > 0 && path[0] == "index") {
 		_add_class_doc(registered_node_name, "", "index");
-	} else if (path[0] == "operators") {
-		if (path[1] == "bitwise") {
+	} else if (path.size() > 0 && path[0] == "operators") {
+		if (path.size() > 1 && path[1] == "bitwise") {
 			_add_class_doc(registered_node_name, "operators", "bitwise");
-		} else if (path[1] == "compare") {
+		} else if (path.size() > 1 && path[1] == "compare") {
 			_add_class_doc(registered_node_name, "operators", "compare");
-		} else if (path[1] == "logic") {
+		} else if (path.size() > 1 && path[1] == "logic") {
 			_add_class_doc(registered_node_name, "operators", "logic");
-		} else if (path[1] == "math") {
+		} else if (path.size() > 1 && path[1] == "math") {
 			_add_class_doc(registered_node_name, "operators", "math");
 		} else {
 			_add_class_doc(registered_node_name, "operators", "");
@@ -1137,11 +1147,10 @@ DocData::MethodDoc VisualScriptPropertySelector::SearchRunner::_get_method_doc(
 	method_doc.name = method_info.name;
 	method_doc.return_type = Variant::get_type_name(method_info.return_val.type);
 	method_doc.description = "No description available";
-	for (List<PropertyInfo>::Element *P = method_info.arguments.front(); P;
-			P = P->next()) {
+	for (int i = 0; i < method_info.arguments.size(); i++) {
 		DocData::ArgumentDoc argument_doc = DocData::ArgumentDoc();
-		argument_doc.name = P->get().name;
-		argument_doc.type = Variant::get_type_name(P->get().type);
+		argument_doc.name = method_info.arguments[i].name;
+		argument_doc.type = Variant::get_type_name(method_info.arguments[i].type);
 		method_doc.arguments.push_back(argument_doc);
 	}
 	return method_doc;

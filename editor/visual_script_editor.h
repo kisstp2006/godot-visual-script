@@ -31,10 +31,14 @@
 #ifndef VISUAL_SCRIPT_EDITOR_H
 #define VISUAL_SCRIPT_EDITOR_H
 
+
+#include "editor/gui/code_editor.h"
 #include "../visual_script.h"
-#include "editor/create_dialog.h"
-#include "editor/editor_inspector.h"
-#include "editor/plugins/script_editor_plugin.h"
+
+#include "editor/gui/create_dialog.h"
+#include "editor/inspector/editor_inspector.h"
+#include "editor/script/script_editor_plugin.h"
+#include "scene/gui/line_edit.h"
 #include "scene/resources/style_box_flat.h"
 #include "visual_script_property_selector.h"
 
@@ -289,7 +293,7 @@ class VisualScriptEditor : public ScriptEditorBase {
 
 	void _on_nodes_copy();
 	void _on_nodes_paste();
-	void _on_nodes_delete();
+	void _on_nodes_delete(const TypedArray<StringName> &p_nodes = TypedArray<StringName>());
 	void _on_nodes_duplicate();
 
 	Variant get_drag_data_fw(const Point2 &p_point);
@@ -356,7 +360,7 @@ public:
 	virtual bool is_unsaved() override;
 	virtual Variant get_edit_state() override;
 	virtual void set_edit_state(const Variant &p_state) override;
-	virtual void goto_line(int p_line, bool p_with_error = false) override;
+	virtual void goto_line(int p_line, int p_column = 0) override;
 	virtual void set_executing_line(int p_line) override;
 	virtual void clear_executing_line() override;
 	virtual void trim_trailing_whitespace() override;
@@ -368,7 +372,7 @@ public:
 	virtual void set_breakpoint(int p_line, bool p_enable) override{};
 	virtual void clear_breakpoints() override{};
 	virtual void add_callback(const String &p_function,
-			PackedStringArray p_args) override;
+			const PackedStringArray &p_args) override;
 	virtual void update_settings() override;
 	virtual bool show_members_overview() override;
 	virtual void set_debugger_active(bool p_active) override;
@@ -379,17 +383,21 @@ public:
 	virtual void set_find_replace_bar(FindReplaceBar *p_bar) override {
 		p_bar->hide();
 	}; // Not needed here.
-	virtual bool can_lose_focus_on_node_selection() override { return false; }
 	virtual void validate() override;
 	virtual Variant get_navigation_state() override { return Variant(); }
 
+
+	// ...
+
+	virtual void trim_final_newlines() override;
+	virtual CodeTextEditor *get_code_editor() const override;
 	virtual Control *get_base_editor() const override;
 
 	static void register_editor();
 
 	static void free_clipboard();
 
-	void update_toggle_scripts_button() override;
+	void update_toggle_scripts_button();
 
 	VisualScriptEditor();
 	~VisualScriptEditor();
@@ -409,6 +417,7 @@ protected:
 	static Ref<VisualScriptNode> create_node_custom(const String &p_name);
 
 public:
+
 	static VisualScriptCustomNodes *get_singleton() { return singleton; }
 
 	void add_custom_node(const String &p_name, const String &p_category,

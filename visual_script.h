@@ -373,6 +373,7 @@ public:
 
 	virtual String get_class_icon_path() const;
 #ifdef TOOLS_ENABLED
+	virtual StringName get_doc_class_name() const override;
 	virtual Vector<DocData::ClassDoc> get_documentation() const override {
 		Vector<DocData::ClassDoc> docs;
 		return docs;
@@ -625,7 +626,7 @@ public:
 	//////////////////////////////////////
 
 	virtual String get_name() const override;
-	virtual void get_doc_comment_delimiters(List<String> *p_delimiters) const override {};
+	virtual Vector<String> get_doc_comment_delimiters() const override;
 
 	/* LANGUAGE FUNCTIONS */
 	virtual void init() override;
@@ -634,11 +635,10 @@ public:
 	virtual void finish() override;
 
 	/* EDITOR FUNCTIONS */
-	virtual void get_reserved_words(List<String> *p_words) const override;
-	virtual bool is_control_flow_keyword(String p_keyword) const override;
-	virtual void
-	get_comment_delimiters(List<String> *p_delimiters) const override;
-	virtual void get_string_delimiters(List<String> *p_delimiters) const override;
+	virtual Vector<String> get_reserved_words() const override;
+	virtual bool is_control_flow_keyword(const String &p_keyword) const override;
+	virtual Vector<String> get_comment_delimiters() const override;
+	virtual Vector<String> get_string_delimiters() const override;
 	virtual bool is_using_templates() override;
 	virtual Ref<Script>
 	make_template(const String &p_template, const String &p_class_name,
@@ -649,7 +649,6 @@ public:
 			List<ScriptLanguage::Warning> *r_warnings = nullptr,
 			HashSet<int> *r_safe_lines = nullptr) const override;
 	virtual Script *create_script() const override;
-	virtual bool has_named_classes() const override;
 	virtual bool supports_builtin_mode() const override;
 	virtual int find_function(const String &p_function,
 			const String &p_code) const override;
@@ -686,6 +685,7 @@ public:
 			int p_max_depth = -1) override;
 
 	virtual void reload_all_scripts() override;
+	virtual void reload_scripts(const Array &p_scripts, bool p_soft_reload) override;
 	virtual void reload_tool_script(const Ref<Script> &p_script,
 			bool p_soft_reload) override;
 	/* LOADER FUNCTIONS */
@@ -701,6 +701,7 @@ public:
 
 	virtual void profiling_start() override;
 	virtual void profiling_stop() override;
+	virtual void profiling_set_save_native_calls(bool p_enable) override;
 
 	virtual int profiling_get_accumulated_data(ProfilingInfo *p_info_arr,
 			int p_info_max) override;

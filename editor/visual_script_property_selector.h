@@ -33,7 +33,7 @@
 
 #include "../visual_script.h"
 #include "core/variant/variant.h"
-#include "editor/editor_help.h"
+#include "editor/doc/editor_help.h"
 #include "scene/gui/dialogs.h"
 #include "scene/gui/option_button.h"
 #include "scene/gui/rich_text_label.h"
@@ -207,7 +207,7 @@ class VisualScriptPropertySelector::SearchRunner : public RefCounted {
 	float match_highest_score = 0;
 
 	HashMap<String, DocData::ClassDoc> combined_docs;
-	List<String> vs_nodes;
+	Vector<String> vs_nodes;
 
 	bool _is_class_disabled_by_feature_profile(const StringName &p_class);
 	bool _is_class_disabled_by_scope(const StringName &p_class);

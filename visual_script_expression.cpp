@@ -543,11 +543,11 @@ Error VisualScriptExpression::_get_token(Token &r_token) {
 					}
 					return OK;
 
-				} else if (is_ascii_char(cchar) || cchar == '_') {
+				} else if (is_ascii_alphabet_char(cchar) || cchar == '_') {
 					String id;
 					bool first = true;
 
-					while (is_ascii_char(cchar) || cchar == '_' ||
+					while (is_ascii_alphabet_char(cchar) || cchar == '_' ||
 							(!first && is_digit(cchar))) {
 						id += String::chr(cchar);
 						cchar = GET_CHAR();
@@ -569,10 +569,10 @@ Error VisualScriptExpression::_get_token(Token &r_token) {
 						r_token.value = false;
 					} else if (id == "PI") {
 						r_token.type = TK_CONSTANT;
-						r_token.value = Math_PI;
+						r_token.value = Math::PI;
 					} else if (id == "TAU") {
 						r_token.type = TK_CONSTANT;
-						r_token.value = Math_TAU;
+						r_token.value = Math::TAU;
 					} else if (id == "INF") {
 						r_token.type = TK_CONSTANT;
 						r_token.value = INFINITY;

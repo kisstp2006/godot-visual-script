@@ -438,7 +438,7 @@ void VisualScriptYieldSignal::_validate_property(
 		} else {
 			Node *bnode = _get_base_node();
 			if (bnode) {
-				p_property.hint_string = bnode->get_path(); // convert to long string
+				p_property.hint_string = String(bnode->get_path()); // convert to long string
 			}
 		}
 	}
